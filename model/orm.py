@@ -33,8 +33,7 @@ class Sqlite3ORM:
 
     @classmethod
     def _create_update(cls):
-        cls.fields[-1] += "=?"
-        update_column_list = "=?, ".join(cls.fields)
+        update_column_list = ", ".join(fields + "=?" for fields in cls.fields)
         SQL = """
              UPDATE {tablename} SET {update_column_list} WHERE pk = ?;"""
         return SQL.format(tablename=cls.dbtable, update_column_list=update_column_list)
@@ -43,6 +42,31 @@ class Sqlite3ORM:
     def _update(self):
         with sqlite3.connect(self.dbpath) as conn:
             cur = conn.cursor()
-            SQL = self._create_insert()
-            propvals = [getattr(self, propname) for propname in self.fields + [self.pk]]
+            SQL = self._create_update()
+            propvals = [getattr(self, propname) for propname in self.fields + ["pk"]]
             cur.execute(SQL, propvals)    
+        
+    @classmethod
+    def one_where(cls, whereclause, values):
+        SQL = f"SELECT * FROM {cls.dbtable} WHERE " + whereclause
+        with sqlite3.connect(cls.dbpath) as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+
+            cur.execute(SQL,values)
+            row = cur.fetchone()
+            if row is None:
+                return None
+            return cls(**row)
+        
+    @classmethod
+    def many_where(cls,whereclause, values):
+        """ equivalent of one where but with fetch allm retunrs a listr of obkects or an empty list"""
+
+    @classmethod
+    def from_pk(cls,pk):
+        return cls.one_where("pk=?",(pk,))
+
+    @classmethod
+    def all(cls):
+        """ return a list of every row in the table as instance of the class"""

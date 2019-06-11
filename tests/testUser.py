@@ -24,7 +24,7 @@ class TestUser(TestCase):
         pass
     
     def testFromPk(self):
-        mike = User.frompk(1)
+        mike = User.from_pk(1)
         self.assertEqual(mike.realname, "Mike Bloom", 
         "Lookup from pk populates instance properties")
     
@@ -44,7 +44,7 @@ class TestUser(TestCase):
         "pk is set after first save")
 
     def testSaveUpdate(self):
-        mike = User.frompk(1)
+        mike = User.from_pk(1)
         oldpk = mike.pk
 
         mike.balance = 0.0
@@ -53,8 +53,21 @@ class TestUser(TestCase):
         self.assertEqual(mike.pk, oldpk,
             "pk does not change after save of exisiting row")
 
-        mikeagain = User.frompk(1)
+        mikeagain = User.from_pk(1)
         self.assertAlmostEqual(mikeagain.balance, 0.0,
             "updated properties saved to database and reloaded")
+    
+    def testOneWhere(self):
+        mike = User.one_where("username=?",('mikebloom',))
+
+        self.assertIsNotNone(mike, "Query does not return None when row is found")
+        self.assertEqual(mike.password,'password',"object return has right properties")
+
+    def testLogin(self):
+        notauser= User.login('fuck','fuck')
+        self.assertIsNone(notauser, "bad credentials retrun the None object")
+    
+        mike= User.login("mikebloom", "password")
+        self.assertEqual(mike.realname,"Mike Bloom", "good credentials retrieve User Object")
 
         
