@@ -60,8 +60,15 @@ class Sqlite3ORM:
             return cls(**row)
         
     @classmethod
-    def many_where(cls,whereclause, values):
+    def many_where(cls,whereclause="TRUE", values=tuple()):
         """ equivalent of one where but with fetch allm retunrs a listr of obkects or an empty list"""
+        SQL = f"SELECT * FROM {cls.dbtable} WHERE " + whereclause
+        with sqlite3.connect(cls.dbpath) as conn:
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute(SQL, values)
+            rows = cur.fetchall()
+            return [cls(**row) for row in rows]
 
     @classmethod
     def from_pk(cls,pk):
@@ -70,3 +77,19 @@ class Sqlite3ORM:
     @classmethod
     def all(cls):
         """ return a list of every row in the table as instance of the class"""
+        return cls.many_where()
+
+    def delete(self):
+        SQL= f"DELETE FROM {self.dbtable} WHERE pk= ?"
+        with sqlite3.connect(self.dbpath) as conn:
+            cur= conn.cursor()
+            cur.execute(SQL,(self.pk,))
+            self.pk= None
+
+    def __repr__(self):
+        reprstring = "<{cname} {fieldvals}>"
+        fieldvals = " ".join("{key}:{value}".format(key = key, value= getattr(self, key))
+                                for key in ["pk",*self.fields])
+        cname = type(self).__name__
+        return reprstring.format(cname= cname, fieldvals= fieldvals)
+

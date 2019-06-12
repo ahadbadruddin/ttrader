@@ -69,5 +69,21 @@ class TestUser(TestCase):
     
         mike= User.login("mikebloom", "password")
         self.assertEqual(mike.realname,"Mike Bloom", "good credentials retrieve User Object")
-
+    
+    def testManyWhere(self):
+        mike = User.many_where('username=?', ('mikebloom',))
+        self.assertIsInstance(mike, list, " many where returns a list")
+        self.assertEqual(len(mike),1, "List is one element")
+        self.assertEqual(mike[0].password,'password', "checks user element")
         
+    def testAll(self):
+        mike = User.all()
+        self.assertIsNotNone(mike, "Query does not return None when row is found")
+        self.assertIs(type(mike), list, "A list was returned")
+        
+    def testDelete(self):
+        mike = User.from_pk(1)
+        mike.delete()
+        self.assertIsNone(mike.pk,".delete should set pk to None")
+        secondmike = User.from_pk(1)
+        self.assertIsNone(secondmike,".delete removes row from db")
