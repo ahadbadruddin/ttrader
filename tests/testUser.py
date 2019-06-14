@@ -6,6 +6,7 @@ from schema import build_user
 # python3 -m unittest tests/testUser.py
 # to run all tests in directory run:
 # python3 -m unnit
+
 class TestUser(TestCase):
 
     def setUp(self):
@@ -13,11 +14,10 @@ class TestUser(TestCase):
 
         mike = User(**{
              "username": "mikebloom",
-             "password": "password",
              "realname": "Mike Bloom",
              "balance": 10000.0
         })
-
+        mike.hash_password("password")
         mike.save()
 
     def tearDown(self):
@@ -61,7 +61,7 @@ class TestUser(TestCase):
         mike = User.one_where("username=?",('mikebloom',))
 
         self.assertIsNotNone(mike, "Query does not return None when row is found")
-        self.assertEqual(mike.password,'password',"object return has right properties")
+        self.assertEqual(mike.realname,'Mike Bloom',"object return has right properties")
 
     def testLogin(self):
         notauser= User.login('fuck','fuck')
@@ -74,7 +74,7 @@ class TestUser(TestCase):
         mike = User.many_where('username=?', ('mikebloom',))
         self.assertIsInstance(mike, list, " many where returns a list")
         self.assertEqual(len(mike),1, "List is one element")
-        self.assertEqual(mike[0].password,'password', "checks user element")
+        self.assertEqual(mike[0].realname,'Mike Bloom', "checks user element")
         
     def testAll(self):
         mike = User.all()
@@ -87,3 +87,10 @@ class TestUser(TestCase):
         self.assertIsNone(mike.pk,".delete should set pk to None")
         secondmike = User.from_pk(1)
         self.assertIsNone(secondmike,".delete removes row from db")
+
+    def testBuyNoMoney(self):
+        mike = User.from_pk(1)
+        with self.assertRaises(ValueError, msg= "Should raise Value error for negative amount"):
+            mike.buy('stok',-1)
+
+    
